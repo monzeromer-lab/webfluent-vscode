@@ -139,3 +139,45 @@ test("a doc comment and an allowed finding", () => {
   expectScope("/// A person, at a glance.", "/// A person, at a glance.", "comment.line.documentation.webfluent");
   expectScope("Text(x) // wf-allow(U01, T05)", "wf-allow", "keyword.other.directive.allow.webfluent");
 });
+
+test("a name in any script is a name", () => {
+  expectScope("state café = 1", "café", "variable.other.state.webfluent");
+  expectScope("state عدد = 3", "عدد", "variable.other.state.webfluent");
+  expectScope("state عددٌ = 3", "عددٌ", "variable.other.state.webfluent");
+  expectScope("derived 二倍 = n * 2", "二倍", "variable.other.state.webfluent");
+  expectScope("component Été(_ nom: String) { }", "Été", "entity.name.type.webfluent");
+  expectScope("type Ωmega { x: Number }", "Ωmega", "entity.name.type.webfluent");
+  expectScope("action زد(n: Number) { }", "زد", "entity.name.function.action.webfluent");
+  expectScope("persist المهام = []", "المهام", "variable.other.declaration.webfluent");
+  expectScope("Text(عدد(1), عنوان: \"x\")", "عدد", "entity.name.function.call.webfluent");
+  expectScope("Text(عدد(1), عنوان: \"x\")", "عنوان", "variable.parameter.named.webfluent");
+  expectScope("Text(\"{عدد} left\")", "عدد", "variable.other.readwrite.webfluent");
+  expectScope("on نقر { }", "نقر", "entity.name.event.webfluent");
+  expectScope("Row(gap: .واسع) { }", "واسع", "constant.other.enum-case.webfluent");
+  expectScope("Button(\"x\").أساسي", "أساسي", "support.constant.flag.webfluent");
+  expectScope("derived d = عدد.طول", "طول", "variable.other.property.webfluent");
+});
+
+test("a keyword run into a name in another script is no keyword", () => {
+  expectNoScope("stateعدد = 1", "stateعدد", "keyword.other.state.webfluent");
+  expectNoScope("ifé = 1", "ifé", "keyword.control.webfluent");
+  expectNoScope("derived x = عددstate", "عددstate", "keyword.other.state.webfluent");
+});
+
+test("a `.name` after a name is a member, after a call or a component a flag", () => {
+  const src = "Alert(e.message).danger.lg";
+  expectScope(src, "message", "variable.other.property.webfluent");
+  expectNoScope(src, "message", "support.constant.flag.webfluent");
+  expectScope(src, "danger", "support.constant.flag.webfluent");
+  expectScope(src, "lg", "support.constant.flag.webfluent");
+  expectScope("Spinner.lg", "lg", "support.constant.flag.webfluent");
+  expectScope("Card.Body.flat { }", "flat", "support.constant.flag.webfluent");
+  expectScope("Text(Cart.total)", "total", "variable.other.property.webfluent");
+  expectScope("Text(items[0].title)", "title", "variable.other.property.webfluent");
+  expectScope("Text(user?.name)", "name", "variable.other.property.webfluent");
+  expectScope("Text(user.name.trim())", "trim", "entity.name.function.call.webfluent");
+  expectNoScope("on click(e) { console.log(e.key) }", "log", "keyword.other.webfluent");
+  expectScope("on click(e) { console.log(e.key) }", "key", "variable.other.property.webfluent");
+  expectNoScope("Text(users.state)", "state", "keyword.other.state.webfluent");
+  expectScope("Row(gap: .md)", "md", "constant.other.enum-case.webfluent");
+});

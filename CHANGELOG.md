@@ -1,5 +1,22 @@
 # Changelog
 
+## Unreleased
+
+- Highlighting brought up to WebFluent 5: every property of a `style`
+  block is coloured as one (only `-`-prefixed ones were); a theme's tokens
+  and an animation's keyframes are coloured as CSS; two declarations on
+  one line, two spaces apart, are two; a `.wfx` file's `style`,
+  `transition`, nested rules, `theme` and `animation` written by
+  indentation are coloured as their braced spelling is; `on click`,
+  `head`, `cleanup`, `step` and match arms that end a line too.
+- New: `worker`, colour literals (`#0F766E`), regular expressions,
+  `?.`, `??`, `...` and ranges, a splice's format (`{total:.currency}`),
+  singular duration units (`1.second`), times with seconds, `///` doc
+  comments and `// wf-allow(…)`. A keyword written as an argument's name
+  (`show: .onBlur`, `in: .local`) is a name, and a `{` that opens no splice
+  (`"{ a: 1 }"`) is text.
+- The grammar is tested with the engine VS Code reads it with.
+
 ## 0.5.0
 
 - WebFluent 5.9: `Popover`, `Frame`, `Splitter` and `VirtualList` are

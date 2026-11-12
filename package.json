@@ -78,7 +78,7 @@
   "scripts": {
     "build": "esbuild src/extension.ts --bundle --platform=node --target=node18 --format=cjs --external:vscode --minify --outfile=out/extension.js",
     "typecheck": "tsc -p ./ --noEmit",
-    "test": "node --test test/server.test.mjs test/bundle.test.mjs",
+    "test": "node --test test/server.test.mjs test/bundle.test.mjs test/grammar.test.mjs",
     "vscode:prepublish": "npm run typecheck && npm run build",
     "package": "vsce package"
   },
@@ -88,7 +88,9 @@
     "@vscode/vsce": "^3.2.0",
     "esbuild": "^0.24.0",
     "ovsx": "1.4.0",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "vscode-oniguruma": "^2.0.1",
+    "vscode-textmate": "^9.3.2"
   },
   "keywords": [
     "webfluent",

@@ -1,0 +1,27 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  # Built and packaged as the marketplace would take it. Its 0.2.0 package
+  # could not start (the language client was left out of it), and nothing
+  # before this built or loaded what it carried.
+  extension:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run typecheck
+      - run: npm run build
+      # With the network: the latest WebFluent release's server is
+      # downloaded and answers `initialize`, as a reader's first start would.
+      - run: npm test
+        env:
+          WF_NETWORK_TESTS: "1"
+      - run: npx vsce package --out webfluent.vsix

@@ -16,11 +16,20 @@ that checks them as you type.
 The extension runs `wf-lsp`. It looks for it in this order:
 
 1. the `webfluent.server.path` setting;
-2. `wf-lsp` on your `PATH`;
+2. `wf-lsp` in an absolute directory on your `PATH`;
 3. `target/release` or `target/debug` in the workspace (the compiler's own
-   checkout);
-4. otherwise it downloads the latest release's `wf-lsp` for your platform
-   once and keeps it.
+   checkout) — only when `webfluent.server.useWorkspaceBuild` is on in your
+   user settings and the workspace is trusted;
+4. otherwise it downloads the `wf-lsp` of the WebFluent release this version
+   of the extension pins, for your platform, checks it against that
+   release's `SHA256SUMS`, and keeps it. A download that does not match is
+   refused; a server checked by an earlier start is used instead.
+
+A workspace's own `.vscode/settings.json` cannot choose the program that
+runs: in a workspace you have not trusted, `webfluent.server.path` and
+`webfluent.server.useWorkspaceBuild` are read from your user settings only
+(the extension runs in restricted mode there), and `useWorkspaceBuild` is
+never read from a workspace at all.
 
 Releases are built for x86_64 Linux, macOS (Apple Silicon and Intel) and
 x86_64 Windows. Elsewhere, build it with `cargo build --release -p wf-lsp`
@@ -30,8 +39,9 @@ from a clone and point `webfluent.server.path` at it.
 
 | Setting | Default | |
 |---|---|---|
-| `webfluent.server.path` | `""` | The `wf-lsp` to run. |
-| `webfluent.server.download` | `true` | Download `wf-lsp` when it is not found. Off: highlighting only. |
+| `webfluent.server.path` | `""` | The `wf-lsp` to run. A workspace's value counts only once you trust it. |
+| `webfluent.server.useWorkspaceBuild` | `false` | Run a `wf-lsp` built in the workspace's `target/`. User settings only. |
+| `webfluent.server.download` | `true` | Download the pinned release's `wf-lsp` when it is not found. Off: highlighting only. |
 
 ## Links
 

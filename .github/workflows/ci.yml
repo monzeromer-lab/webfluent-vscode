@@ -4,6 +4,9 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   # Built and packaged as the marketplace would take it. Its 0.2.0 package
   # could not start (the language client was left out of it), and nothing
@@ -11,17 +14,20 @@ jobs:
   extension:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
-          node-version: 20
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
           cache: npm
       - run: npm ci --no-audit --no-fund
       - run: npm run typecheck
       - run: npm run build
-      # With the network: the latest WebFluent release's server is
-      # downloaded and answers `initialize`, as a reader's first start would.
+      # With the network: the pinned WebFluent release's server is
+      # downloaded, checked against SHA256SUMS and answers `initialize`, as a
+      # reader's first start would.
       - run: npm test
         env:
           WF_NETWORK_TESTS: "1"
-      - run: npx vsce package --out webfluent.vsix
+      - run: npx --no-install vsce package --out webfluent.vsix

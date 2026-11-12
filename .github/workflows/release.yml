@@ -7,24 +7,39 @@ on:
     tags:
       - "v*"
 
-permissions:
-  contents: write
+# Nothing may write unless a job says so: `build` reads, `release` writes the
+# GitHub release, and each publish job holds one marketplace token and
+# nothing else — no repository write, no install scripts.
+permissions: {}
+
+# The tag reaches scripts through the environment, never spliced into a
+# `run:` line; `build` holds it to vX.Y.Z.
+env:
+  TAG: ${{ github.ref_name }}
 
 jobs:
-  release:
+  build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
-          node-version: 20
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
           cache: npm
 
-      - name: The tag is the package's version
+      - name: The tag is vX.Y.Z and the package's version
         run: |
+          if ! printf '%s' "$TAG" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::the tag must be vX.Y.Z"
+            exit 1
+          fi
           version=$(node -p 'require("./package.json").version')
-          if [ "v$version" != "${{ github.ref_name }}" ]; then
-            echo "::error::package.json is $version, but the tag is ${{ github.ref_name }}"
+          if [ "v$version" != "$TAG" ]; then
+            echo "::error::package.json is $version, but the tag is $TAG"
             exit 1
           fi
 
@@ -33,19 +48,57 @@ jobs:
       - run: npm run build
       - run: npm test
 
+      # vsce from the lock file, as every other tool here.
       - name: Package
         run: |
           mkdir -p dist
-          npx vsce package --out "dist/webfluent-vscode-$(node -p 'require("./package.json").version').vsix"
+          npx --no-install vsce package --out "dist/webfluent-vscode-${TAG#v}.vsix"
 
-      - uses: softprops/action-gh-release@v2
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: vsix
+          path: dist/*.vsix
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: vsix
+          path: dist
+
+      - uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
         with:
           generate_release_notes: true
           files: dist/*.vsix
 
-      # Each needs its own token as a repository secret (`VSCE_PAT`,
-      # `OVSX_PAT`); without one that step warns and passes. A version
-      # already published is skipped.
+  # Each marketplace in a job of its own, with its own token as a repository
+  # secret (`VSCE_PAT`, `OVSX_PAT`); without one that job warns and passes.
+  # The publishing tool comes from package-lock.json, installed with
+  # `--ignore-scripts`, so no dependency's install script runs beside the
+  # token. They publish the .vsix `build` made; nothing is built here. A
+  # version already published is skipped.
+  publish-marketplace:
+    needs: release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: vsix
+          path: dist
+      - run: npm ci --ignore-scripts --no-audit --no-fund
       - name: VS Code Marketplace
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
@@ -53,9 +106,26 @@ jobs:
           if [ -z "$VSCE_PAT" ]; then
             echo "::warning::VSCE_PAT is not set, so the extension was not published to the VS Code Marketplace."
           else
-            npx --yes @vscode/vsce publish --packagePath dist/*.vsix --skip-duplicate
+            npx --no-install vsce publish --packagePath dist/*.vsix --skip-duplicate
           fi
 
+  publish-open-vsx:
+    needs: release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: vsix
+          path: dist
+      - run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Open VSX
         env:
           OVSX_PAT: ${{ secrets.OVSX_PAT }}
@@ -63,5 +133,5 @@ jobs:
           if [ -z "$OVSX_PAT" ]; then
             echo "::warning::OVSX_PAT is not set, so the extension was not published to Open VSX."
           else
-            npx --yes ovsx publish dist/*.vsix --pat "$OVSX_PAT" --skip-duplicate
+            npx --no-install ovsx publish dist/*.vsix --skip-duplicate
           fi

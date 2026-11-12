@@ -20,6 +20,16 @@
     "onLanguage:webfluent"
   ],
   "main": "./out/extension.js",
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": "limited",
+      "description": "In a workspace you have not trusted, its settings cannot choose the language server: `webfluent.server.path` and `webfluent.server.useWorkspaceBuild` come from your own settings only.",
+      "restrictedConfigurations": [
+        "webfluent.server.path",
+        "webfluent.server.useWorkspaceBuild"
+      ]
+    }
+  },
   "contributes": {
     "languages": [
       {
@@ -48,12 +58,19 @@
         "webfluent.server.path": {
           "type": "string",
           "default": "",
-          "markdownDescription": "The `wf-lsp` to run. Empty: look on `PATH`, then in the workspace's `target/`, then download the latest release's."
+          "scope": "machine-overridable",
+          "markdownDescription": "The `wf-lsp` to run. Empty: look on `PATH`, then download the WebFluent release this extension pins, checked against its `SHA256SUMS`. A workspace may set this only once you trust it."
+        },
+        "webfluent.server.useWorkspaceBuild": {
+          "type": "boolean",
+          "default": false,
+          "scope": "application",
+          "markdownDescription": "Run a `wf-lsp` built in the workspace (`target/release` or `target/debug`) — for working on the compiler itself. Read from your user settings only, and only in a trusted workspace: a folder someone else wrote could hold any program there."
         },
         "webfluent.server.download": {
           "type": "boolean",
           "default": true,
-          "markdownDescription": "Download `wf-lsp` from the latest GitHub release when it is not on `PATH`. Off: highlighting only, until a server is installed."
+          "markdownDescription": "Download `wf-lsp` from the WebFluent release this extension pins when it is not on `PATH`. Off: highlighting only, until a server is installed."
         }
       }
     }
@@ -70,6 +87,7 @@
     "@types/vscode": "^1.82.0",
     "@vscode/vsce": "^3.2.0",
     "esbuild": "^0.24.0",
+    "ovsx": "1.4.0",
     "typescript": "^5.7.0"
   },
   "keywords": [

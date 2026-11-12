@@ -8,7 +8,7 @@
   "icon": "icon.png",
   "repository": {
     "type": "git",
-    "url": "https://github.com/monzeromer-lab/WebFluent"
+    "url": "https://github.com/monzeromer-lab/webfluent-vscode"
   },
   "categories": [
     "Programming Languages"
@@ -82,7 +82,7 @@
   ],
   "homepage": "https://webfluent.monzeromer.dev",
   "bugs": {
-    "url": "https://github.com/monzeromer-lab/WebFluent/issues"
+    "url": "https://github.com/monzeromer-lab/webfluent-vscode/issues"
   },
   "dependencies": {
     "vscode-languageclient": "^9.0.1"

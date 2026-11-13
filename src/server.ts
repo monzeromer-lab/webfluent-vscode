@@ -21,7 +21,7 @@ export const REPO = "monzeromer-lab/WebFluent";
  * after a compiler release. Never `latest`: whoever could replace the latest
  * release would otherwise choose what every editor runs on its next start.
  */
-export const SERVER_VERSION = "v5.15.0";
+export const SERVER_VERSION = "v6.0.0";
 
 const SERVER = "wf-lsp";
 const USER_AGENT = "webfluent-vscode (https://github.com/monzeromer-lab/WebFluent)";

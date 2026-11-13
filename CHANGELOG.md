@@ -1,6 +1,10 @@
 # Changelog
 
-## Unreleased
+## 0.6.0
+
+- Runs the WebFluent 6.0.0 language server: answers in about a
+  tenth of a millisecond, follows a component's props, events and slots
+  for renames, and offers what the compiler offers.
 
 - Highlighting brought up to WebFluent 5: every property of a `style`
   block is coloured as one (only `-`-prefixed ones were); a theme's tokens

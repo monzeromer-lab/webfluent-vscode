@@ -161,7 +161,7 @@
             },
             {
               "name": "meta.interpolation.webfluent",
-              "begin": "\\{(?=[\\p{XID_Start}_\\[(])",
+              "begin": "\\{(?=[\\p{XID_Start}_\\[(])(?![\\p{XID_Start}_]\\p{XID_Continue}*\\s*(?::(?!\\.)|,))(?=[^\\n]*\\})",
               "end": "\\}",
               "beginCaptures": {
                 "0": {
@@ -222,7 +222,7 @@
             },
             {
               "name": "meta.interpolation.webfluent",
-              "begin": "\\{(?=[\\p{XID_Start}_\\[(])",
+              "begin": "\\{(?=[\\p{XID_Start}_\\[(])(?![\\p{XID_Start}_]\\p{XID_Continue}*\\s*(?::(?!\\.)|,))(?=[^\\n]*\\})",
               "end": "\\}",
               "beginCaptures": {
                 "0": {
@@ -299,7 +299,7 @@
     "declarations": {
       "patterns": [
         {
-          "match": "\\b(page|component|store|theme|type|enum|api|animation|part)\\b\\s+(\\p{Lu}\\p{XID_Continue}*)",
+          "match": "\\b(page|component|store|theme|type|enum|api|animation|part|example|fake)\\b\\s+(\\p{Lu}\\p{XID_Continue}*)",
           "captures": {
             "1": {
               "name": "keyword.declaration.webfluent"
@@ -333,20 +333,55 @@
           "match": "\\b(from)\\b(?=\\s*\")"
         },
         {
-          "match": "^\\s*(fn|prop)\\b(?=\\s+[\\p{XID_Start}_])",
+          "comment": "`fake Examples for Backend.users from examples`",
+          "match": "\\b(from)\\s+(examples)\\b",
           "captures": {
             "1": {
+              "name": "keyword.declaration.webfluent"
+            },
+            "2": {
               "name": "keyword.declaration.webfluent"
             }
           }
         },
         {
-          "match": "^\\s*(integrity)\\b(?=\\s*:)",
+          "comment": "`middleware timed(req, next) { … }`, and a service's `middleware [bearer(…)]`",
+          "match": "(?<!\\.)\\b(middleware)\\b(?:\\s+([\\p{XID_Start}_]\\p{XID_Continue}*))?(?=\\s*[\\[(])",
           "captures": {
             "1": {
               "name": "keyword.declaration.webfluent"
+            },
+            "2": {
+              "name": "entity.name.function.webfluent"
             }
           }
+        },
+        {
+          "comment": "`example Card \"Wide\"(fakes: [OneUser])`, `test \"…\"(fakes: […])`",
+          "match": "(?<!\\.)\\b(fakes)(?=\\s*:\\s*\\[)",
+          "name": "keyword.other.test.webfluent"
+        },
+        {
+          "comment": "Where a parameter goes: `in header \"X-Token\"`, `in query \"page-size\"`, `in cookie`",
+          "match": "(?<!\\.)\\b(in)\\s+(header|query|cookie)\\b",
+          "captures": {
+            "1": {
+              "name": "keyword.control.webfluent"
+            },
+            "2": {
+              "name": "keyword.other.parameter-location.webfluent"
+            }
+          }
+        },
+        {
+          "comment": "What a write makes stale, and how a read pages",
+          "name": "keyword.other.service.webfluent",
+          "match": "(?<!\\.)\\b(?:(invalidates)\\b(?=\\s*\\[)|(invalidations|pagination)\\b(?=\\s*(?:\\{|$|//))|(pages)\\b(?=\\s+\\.))"
+        },
+        {
+          "comment": "`idempotent`, `streamed` — what an endpoint is",
+          "name": "keyword.other.service.webfluent",
+          "match": "(?<!\\.)\\b(idempotent|streamed)\\b(?!\\s*[:=(.,])"
         },
         {
           "name": "keyword.declaration.webfluent",
@@ -452,7 +487,7 @@
         },
         {
           "name": "keyword.other.webfluent",
-          "match": "(?<!\\.)\\b(concurrent)\\b(?=\\s*(?:\\{|$))"
+          "match": "(?<!\\.)\\b(concurrent)\\b(?!\\s*[:=(.,])"
         },
         {
           "name": "keyword.other.webfluent",
@@ -463,12 +498,18 @@
           "match": "(?<!\\.)\\b(migrate)\\b(?=\\s+[0-9])"
         },
         {
-          "match": "(?<!\\.)\\b(expect)\\b(?:\\s+(not)\\b)?(?=\\s*\")",
+          "match": "(?<!\\.)\\b(expect)\\b(?:\\s+(not)\\b)?(?:(?=\\s*\")|\\s+(called)\\b|\\s+(focus)\\b(?=\\s*\"))",
           "captures": {
             "1": {
               "name": "keyword.other.test.webfluent"
             },
             "2": {
+              "name": "keyword.other.test.webfluent"
+            },
+            "3": {
+              "name": "keyword.other.test.webfluent"
+            },
+            "4": {
               "name": "keyword.other.test.webfluent"
             }
           }
@@ -584,7 +625,7 @@
       "patterns": [
         {
           "name": "support.type.webfluent",
-          "match": "\\b(String|Number|Bool|Map|Any|Date|Time|DateTime|Duration|Money|Url|Email|Color|Uuid|File|Secret)\\b"
+          "match": "\\b(String|Number|Bool|Json|Date|Time|DateTime|Duration|Money|Url|Email|Color|Uuid|File|Secret)\\b"
         }
       ]
     },
@@ -606,16 +647,56 @@
     "sub-components": {
       "patterns": [
         {
-          "match": "\\b(Card|Navbar|Sidebar|Menu|Dropdown|Breadcrumb|Carousel|Modal|Table|Select|Tabs)(\\.)(Header|Body|Footer|Brand|Links|Actions|Item|Divider|Slide|Head|Row|Cell|Option|Page)\\b((?:\\.(?!\\p{Lu})[\\p{XID_Start}_]\\p{XID_Continue}*(?!\\p{XID_Continue})(?!\\s*\\())*)",
+          "comment": "A built-in's part, as the registry lists them (`wf registry --json`): Table.Row, Card.Header",
+          "match": "(?<!\\.)\\b(Accordion\\.(?:Item|Summary|Panel)|AlertDialog\\.(?:Title|Footer)|AppShell\\.(?:Header|Footer)|BottomNavigation\\.(?:Item)|Breadcrumb\\.(?:Item)|Callout\\.(?:Title)|Card\\.(?:Header|Body|Footer)|Carousel\\.(?:Slide)|CheckboxGroup\\.(?:Option|Legend)|Chip\\.(?:Action|Label|Remove)|CodeBlock\\.(?:Bar|Lines|Marks|Mark)|CommandPalette\\.(?:Group|Item|List)|ContextMenu\\.(?:Items)|DataTable\\.(?:Column)|DescriptionList\\.(?:Item|Term|Details)|Dialog\\.(?:Title)|Dropdown\\.(?:Item|Divider)|EmptyState\\.(?:Title|Text|Actions)|Fab\\.(?:Action|Trigger)|Field\\.(?:Label|Hint|Error)|Fieldset\\.(?:Legend)|HoverCard\\.(?:Content)|InputGroup\\.(?:Addon|Clear)|Item\\.(?:Media|Content|Actions)|List\\.(?:Item)|Listbox\\.(?:Option)|LoadingOverlay\\.(?:Content|Cover)|Menu\\.(?:Item|Sub|Divider)|Menubar\\.(?:Menu)|Modal\\.(?:Title|Footer)|Navbar\\.(?:Brand|Links|Actions)|NavigationMenu\\.(?:Item|Link|List|Trigger|Panel)|NumberInput\\.(?:Decrease|Increase)|OnThisPage\\.(?:Title)|Pagination\\.(?:Prev|Next|Page|Gap)|PanelGroup\\.(?:Panel)|PrevNext\\.(?:Prev|Next)|RadioGroup\\.(?:Option|Legend|Hint)|Select\\.(?:Option)|Sheet\\.(?:Title|Footer)|Sidebar\\.(?:Header|Item|Divider)|Stat\\.(?:Label|Value|Change)|Stepper\\.(?:Step|List|Item)|Table\\.(?:Head|Body|Row|Cell)|Tabs\\.(?:Page)|Timeline\\.(?:Item|Time)|ToggleGroup\\.(?:Item)|Tour\\.(?:Step)|Unsafe\\.(?:Html))\\b((?:\\.(?!\\p{Lu})[\\p{XID_Start}_]\\p{XID_Continue}*(?!\\p{XID_Continue})(?!\\s*\\())*)",
           "captures": {
             "1": {
-              "name": "support.class.component.webfluent"
+              "patterns": [
+                {
+                  "match": "(\\p{Lu}\\p{XID_Continue}*)(\\.)(\\p{Lu}\\p{XID_Continue}*)",
+                  "captures": {
+                    "1": {
+                      "name": "support.class.component.webfluent"
+                    },
+                    "2": {
+                      "name": "punctuation.accessor.dot.webfluent"
+                    },
+                    "3": {
+                      "name": "support.class.sub-component.webfluent"
+                    }
+                  }
+                }
+              ]
+            },
+            "2": {
+              "patterns": [
+                {
+                  "match": "(\\.)((?!\\p{Lu})[\\p{XID_Start}_]\\p{XID_Continue}*)",
+                  "captures": {
+                    "1": {
+                      "name": "punctuation.accessor.flag.webfluent"
+                    },
+                    "2": {
+                      "name": "support.constant.flag.webfluent"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        {
+          "comment": "A part a project's component declares: Panel.Header",
+          "match": "(?<!\\.)\\b(\\p{Lu}\\p{XID_Continue}*)(\\.)(\\p{Lu}\\p{XID_Continue}*)\\b((?:\\.(?!\\p{Lu})[\\p{XID_Start}_]\\p{XID_Continue}*(?!\\p{XID_Continue})(?!\\s*\\())*)",
+          "captures": {
+            "1": {
+              "name": "entity.name.type.webfluent"
             },
             "2": {
               "name": "punctuation.accessor.dot.webfluent"
             },
             "3": {
-              "name": "support.class.sub-component.webfluent"
+              "name": "entity.name.type.part.webfluent"
             },
             "4": {
               "patterns": [
@@ -767,6 +848,10 @@
     "operators": {
       "patterns": [
         {
+          "name": "keyword.operator.arrow.webfluent",
+          "match": "->|=>"
+        },
+        {
           "name": "keyword.operator.spread.webfluent",
           "match": "\\.\\.\\.(?=[\\p{XID_Start}_\\[({])"
         },
@@ -787,6 +872,11 @@
           "match": "==|!=|<=|>=|<|>"
         },
         {
+          "comment": "`User!`, `[Row]!`, `-> !`, `T ! E`: a result, or what fails — a type, not a not",
+          "name": "keyword.operator.type.result.webfluent",
+          "match": "(?<=[\\p{XID_Continue}\\]?)])!(?!=)|(?<=->|-> )!|(?<=[\\p{XID_Continue}\\]?)] )!(?=\\s+\\p{Lu})"
+        },
+        {
           "name": "keyword.operator.logical.webfluent",
           "match": "&&|\\|\\||!"
         },
@@ -797,10 +887,6 @@
         {
           "name": "keyword.operator.arithmetic.webfluent",
           "match": "[+\\-*/%]"
-        },
-        {
-          "name": "keyword.operator.arrow.webfluent",
-          "match": "=>"
         }
       ]
     },

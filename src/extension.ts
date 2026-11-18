@@ -1,5 +1,16 @@
 import * as fs from "fs";
-import { ExtensionContext, ProgressLocation, window, workspace } from "vscode";
+import {
+  CodeLens,
+  EventEmitter,
+  ExtensionContext,
+  Location,
+  ProgressLocation,
+  TextDocument,
+  commands,
+  languages,
+  window,
+  workspace,
+} from "vscode";
 import {
   Executable,
   LanguageClient,
@@ -85,6 +96,77 @@ export async function activate(context: ExtensionContext): Promise<void> {
 
   client = new LanguageClient("webfluent", "WebFluent Language Server", serverOptions, clientOptions);
   await client.start();
+  scriptUses(context, client);
+}
+
+/** What `webfluent/scriptUses` answers: a name the script declares, where,
+ * and every place that uses it. */
+interface ScriptName {
+  name: string;
+  range: { start: { line: number; character: number }; end: { line: number; character: number } };
+  uses: { uri: string; range: ScriptName["range"] }[];
+  title: string;
+}
+
+/** A project's own scripts — the `.js` files under `src/` — are JavaScript,
+ * which the built-in TypeScript service reads; what it cannot see is that a
+ * page calls them. Over each name a script declares, a lens says where it
+ * is used, and find-references lists the pages beside the scripts. The
+ * server is not handed the script (it would be offered as its formatter and
+ * its highlighter); it reads it from the disk, so this follows a save. Its
+ * faded hint on a name nothing uses arrives as a diagnostic. */
+function scriptUses(context: ExtensionContext, lsp: LanguageClient): void {
+  const selector = [{ scheme: "file", language: "javascript", pattern: "**/src/**/*.{js,mjs,cjs}" }];
+  const changed = new EventEmitter<void>();
+  const asked = async (doc: TextDocument): Promise<ScriptName[]> => {
+    try {
+      return await lsp.sendRequest<ScriptName[]>("webfluent/scriptUses", { uri: doc.uri.toString() });
+    } catch {
+      return [];
+    }
+  };
+  const p2c = lsp.protocol2CodeConverter;
+  const locations = (uses: ScriptName["uses"]): Location[] =>
+    uses.map((u) => new Location(p2c.asUri(u.uri), p2c.asRange(u.range)));
+
+  context.subscriptions.push(
+    changed,
+    languages.registerCodeLensProvider(selector, {
+      onDidChangeCodeLenses: changed.event,
+      async provideCodeLenses(doc) {
+        return (await asked(doc)).map((n) => {
+          const range = p2c.asRange(n.range);
+          return new CodeLens(range, {
+            title: n.title,
+            command: n.uses.length > 0 ? "editor.action.showReferences" : "",
+            arguments: [doc.uri, range.start, locations(n.uses)],
+          });
+        });
+      },
+    }),
+    languages.registerReferenceProvider(selector, {
+      async provideReferences(doc, position) {
+        const found = (await asked(doc)).find((n) => p2c.asRange(n.range).contains(position) ||
+          doc.getText(doc.getWordRangeAtPosition(position)) === n.name);
+        // Every use but this script's own, which the TypeScript service
+        // lists already.
+        return found ? locations(found.uses).filter((l) => l.uri.toString() !== doc.uri.toString()) : [];
+      },
+    }),
+    // A server's lens elsewhere (another editor's) names this command.
+    commands.registerCommand("webfluent.showReferences", (uri: string, position, uses) =>
+      commands.executeCommand(
+        "editor.action.showReferences",
+        p2c.asUri(uri),
+        p2c.asPosition(position),
+        locations(uses ?? []),
+      ),
+    ),
+    // A save of a page or a script may change who uses what.
+    workspace.onDidSaveTextDocument((doc) => {
+      if (["webfluent", "javascript"].includes(doc.languageId)) changed.fire();
+    }),
+  );
 }
 
 export async function deactivate(): Promise<void> {

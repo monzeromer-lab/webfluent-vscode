@@ -181,3 +181,72 @@ test("a `.name` after a name is a member, after a call or a component a flag", (
   expectNoScope("Text(users.state)", "state", "keyword.other.state.webfluent");
   expectScope("Row(gap: .md)", "md", "constant.other.enum-case.webfluent");
 });
+
+/** No piece of `source` that holds `text` carries `scope`. */
+function expectNoScopeWithin(source, text, scope) {
+  const pieces = tokenize(source).filter((p) => p.text.includes(text));
+  assert.ok(pieces.length > 0, `no piece holds \`${text}\` in:\n${source}`);
+  for (const p of pieces) assert.ok(!p.scopes.includes(scope), `\`${p.text}\` is ${p.scopes}, and should not be ${scope}`);
+}
+
+test("an example, a fake, a middleware", () => {
+  const src = "example UserCard \"Away\"(fakes: [OneUser]) { UserCard(\"Ada\") }";
+  expectScope(src, "example", "keyword.declaration.webfluent");
+  expectScope(src, "UserCard", "entity.name.type.webfluent");
+  expectScope(src, "fakes", "keyword.other.test.webfluent");
+  expectScope("fake OneUser for Backend.users from examples", "fake", "keyword.declaration.webfluent");
+  expectScope("fake OneUser for Backend.users from examples", "examples", "keyword.declaration.webfluent");
+  expectScope("middleware timed(req, next) {", "middleware", "keyword.declaration.webfluent");
+  expectScope("middleware timed(req, next) {", "timed", "entity.name.function.webfluent");
+  expectScope("    middleware [requestId, log]", "middleware", "keyword.declaration.webfluent");
+});
+
+test("the words of a service", () => {
+  const ep = "    get list(t: String in header \"X-T\", q: String? in query \"q\", s: String in cookie) at \"u\" -> [User]! idempotent streamed";
+  expectScope(ep, "header", "keyword.other.parameter-location.webfluent");
+  expectScope(ep, "query", "keyword.other.parameter-location.webfluent");
+  expectScope(ep, "cookie", "keyword.other.parameter-location.webfluent");
+  expectScope(ep, "idempotent", "keyword.other.service.webfluent");
+  expectScope(ep, "streamed", "keyword.other.service.webfluent");
+  expectScope(ep, "->", "keyword.operator.arrow.webfluent");
+  expectScope(ep, "!", "keyword.operator.type.result.webfluent");
+  expectScope("    invalidates [list, byId(id)]", "invalidates", "keyword.other.service.webfluent");
+  expectScope("    invalidations {", "invalidations", "keyword.other.service.webfluent");
+  expectScope("    pagination {", "pagination", "keyword.other.service.webfluent");
+  expectScope("    users.list pages .cursor(param: after)", "pages", "keyword.other.service.webfluent");
+  expectScope("action save() -> ! CreateError {", "!", "keyword.operator.type.result.webfluent");
+  expectScope("type R = Settings ! DecodeError", "!", "keyword.operator.type.result.webfluent");
+  expectScope("derived off = !open", "!", "keyword.operator.logical.webfluent");
+  expectScope("derived same = a != b", "!=", "keyword.operator.comparison.webfluent");
+  expectScope("derived f = x => x", "=>", "keyword.operator.arrow.webfluent");
+  expectScope("action poll() -> ! concurrent {", "concurrent", "keyword.other.webfluent");
+});
+
+test("what a test expects", () => {
+  expectScope("expect called Backend.users.create", "called", "keyword.other.test.webfluent");
+  expectScope("expect not called Backend.users.create", "expect", "keyword.other.test.webfluent");
+  expectScope("expect focus \"Beta\"", "focus", "keyword.other.test.webfluent");
+});
+
+test("Json is a type; Map and Any are not", () => {
+  expectScope("state raw: Json = Json.null", "Json", "support.type.webfluent");
+  expectNoScopeWithin("state m: Map = x", "Map", "support.type.webfluent");
+  expectNoScopeWithin("state m: Any = x", "Any", "support.type.webfluent");
+});
+
+test("a brace group in prose is text, a splice is not", () => {
+  expectNoScopeWithin("Text(\"Use {key: value} in prose\")", "key", "meta.interpolation.webfluent");
+  expectNoScopeWithin("Text(\"Pairs {a, b} too\")", "a, b", "meta.interpolation.webfluent");
+  expectNoScopeWithin("Text(\"Open { on one line\")", "Open", "meta.interpolation.webfluent");
+  expectScope("Text(\"Hi {name}\")", "name", "meta.interpolation.webfluent");
+  expectScope("Text(\"{items[0]}\")", "items", "meta.interpolation.webfluent");
+  expectScope("Text(\"{when:.date(long)}\")", "date", "support.function.format.webfluent");
+});
+
+test("every built-in's part, and a project's", () => {
+  expectScope("Tour.Step(target: x) { }", "Step", "support.class.sub-component.webfluent");
+  expectScope("DescriptionList.Item(\"Region\")", "Item", "support.class.sub-component.webfluent");
+  expectScope("Unsafe.Html(x)", "Html", "support.class.sub-component.webfluent");
+  expectScope("PanelGroup.Panel.flat { }", "flat", "support.constant.flag.webfluent");
+  expectScope("Panel.Header(\"Keys\")", "Header", "entity.name.type.part.webfluent");
+});

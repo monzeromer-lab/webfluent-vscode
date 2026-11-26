@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.7.0
+
+- Runs the WebFluent 8.0.0 language server, the first of the 8.x
+  long-term line: the six deprecated built-ins (`Dialog`, `Dropdown`,
+  `Tag`, `Toast`, `Code(…).block`, `CircularProgress`) are shown struck
+  through with their replacement, a page's title and guard are checked,
+  and an error lands on the exact name it quotes.
+
 ## 0.6.0
 
 - Runs the WebFluent 6.0.0 language server: answers in about a

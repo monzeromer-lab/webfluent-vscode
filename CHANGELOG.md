@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.0
+
+- Runs the WebFluent 8.1.0 language server: a page's title and guard are
+  checked, a `///` comment inside an action is a comment, and syntax
+  errors are listed before what they cause.
+
 ## 0.7.0
 
 - Runs the WebFluent 8.0.0 language server, the first of the 8.x
